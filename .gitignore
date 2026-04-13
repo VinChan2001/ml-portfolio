@@ -1,0 +1,12 @@
+.DS_Store
+__pycache__/
+.claude/
+
+temp_airbnb/
+temp_crash/
+temp_flight/
+images/
+
+annotated-Group15_BUDT758T_FinalReport.pdf
+Venkata_Chanamallu_01042025.pptx
+extract_images.py

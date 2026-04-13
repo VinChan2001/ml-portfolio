@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Interactive recruiter-facing playground built from real GitHub ML repos and repo artifacts.">
+    <title>Interactive Work Samples</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="topbar">
+        <div class="shell topbar-inner">
+            <a href="#" class="brand">Interactive Work Samples</a>
+            <div class="topbar-links">
+                <a href="#digit-lab">Digit</a>
+                <a href="#gesture-lab">Gesture</a>
+                <a href="#flight-lab">Flight</a>
+                <a href="#airbnb-lab">Airbnb</a>
+                <a href="#crash-lab">Crash</a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero shell">
+        <div class="hero-copy">
+            <p class="eyebrow">Recruiter-Friendly Interactions</p>
+            <h1>Explore the work directly.</h1>
+            <p class="hero-text">
+                These demos are rebuilt from real GitHub projects and repo outputs so someone skimming a resume can
+                test the work directly: draw digits, count fingers on camera, simulate flight delay risk, tune an
+                Airbnb shortlist threshold, and slice real crash-clearance cohorts from the notebook data.
+            </p>
+            <div class="hero-chips">
+                <span>doodle-digit-app</span>
+                <span>hand-gesture-counter</span>
+                <span>Flight-Delay-Prediction-Pipeline</span>
+                <span>Predicting-High-Booking-Rate-Airbnb-Listings</span>
+                <span>Crash-Duration-Prediction</span>
+            </div>
+        </div>
+
+        <aside class="hero-note">
+            <p class="hero-note-label">Ground Rules</p>
+            <ul class="note-list">
+                <li>Everything here maps back to existing public repos.</li>
+                <li>No generic portfolio cards or made-up case studies.</li>
+                <li>Each interaction is tied to real code files or model artifacts.</li>
+            </ul>
+        </aside>
+    </header>
+
+    <main class="shell lab-stack">
+        <section id="digit-lab" class="lab lab-digit">
+            <div class="lab-intro">
+                <p class="lab-kicker">Repo 01</p>
+                <h2>Doodle Digit Lab</h2>
+                <p>
+                    This is a browser version of your <code>doodle-digit-app</code>. It uses the actual trained k-NN model data
+                    from <code>models/digits_knn.pkl</code>, mirrors the preprocessing from <code>app.py</code>, and shows nearest examples
+                    so people can see how the classifier is reasoning.
+                </p>
+                <div class="repo-links">
+                    <a href="https://github.com/VinChan2001/doodle-digit-app" target="_blank" rel="noreferrer">Open repo</a>
+                    <span class="repo-file">app.py</span>
+                    <span class="repo-file">src/train.py</span>
+                    <span class="repo-file">models/digits_knn.pkl</span>
+                </div>
+            </div>
+
+            <div class="lab-surface">
+                <div class="digit-workspace">
+                    <div class="draw-board-wrap">
+                        <canvas id="digit-canvas" width="320" height="320" aria-label="Draw a digit"></canvas>
+                        <div id="digit-canvas-hint" class="draw-hint">Draw a digit here</div>
+                        <div class="draw-controls">
+                            <button id="digit-clear" class="action-btn" type="button">Clear</button>
+                            <button id="digit-sample" class="action-btn action-alt" type="button">Try Sample</button>
+                        </div>
+                    </div>
+
+                    <div class="digit-insights">
+                        <article class="metric-panel">
+                            <span class="panel-label">Prediction</span>
+                            <div class="big-readout" id="digit-prediction">Draw 0-9</div>
+                            <div class="confidence-row">
+                                <span id="digit-confidence-label">Waiting for input</span>
+                                <div class="confidence-bar">
+                                    <span id="digit-confidence-fill"></span>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="metric-panel">
+                            <span class="panel-label">Processed 8x8 Input</span>
+                            <div id="digit-processed-grid" class="pixel-grid pixel-grid-large"></div>
+                        </article>
+
+                        <article class="metric-panel">
+                            <span class="panel-label">Top 3 Votes</span>
+                            <div id="digit-top3" class="top-list"></div>
+                        </article>
+                    </div>
+                </div>
+
+                <div class="neighbor-panel">
+                    <div class="neighbor-header">
+                        <span class="panel-label">Nearest Training Examples</span>
+                        <span class="neighbor-note">Pulled from the repo-backed model state</span>
+                    </div>
+                    <div id="digit-neighbors" class="neighbor-grid"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="gesture-lab" class="lab lab-gesture">
+            <div class="lab-intro">
+                <p class="lab-kicker">Repo 02</p>
+                <h2>Hand Gesture Counter</h2>
+                <p>
+                    This ports the finger-counting logic from <code>hand_gesture_final.py</code> into the browser so recruiters
+                    can test the concept live with a webcam instead of just reading that it exists.
+                </p>
+                <div class="repo-links">
+                    <a href="https://github.com/VinChan2001/hand-gesture-counter" target="_blank" rel="noreferrer">Open repo</a>
+                    <span class="repo-file">hand_gesture_final.py</span>
+                    <span class="repo-file">MediaPipe logic</span>
+                    <span class="repo-file">Real-time counting</span>
+                </div>
+            </div>
+
+            <div class="lab-surface gesture-surface">
+                <div class="gesture-camera">
+                    <canvas id="gesture-output" width="640" height="480" aria-label="Hand gesture camera output"></canvas>
+                    <video id="gesture-video" playsinline hidden></video>
+                    <div id="gesture-overlay" class="gesture-overlay">Start the camera to try 1-5 fingers.</div>
+                </div>
+
+                <div class="gesture-side">
+                    <article class="metric-panel">
+                        <span class="panel-label">Live Count</span>
+                        <div class="big-readout" id="gesture-count">0</div>
+                        <p id="gesture-status" class="subtle-text">Camera idle</p>
+                    </article>
+
+                    <article class="metric-panel gesture-stats">
+                        <div>
+                            <span class="panel-label">Detected Hand</span>
+                            <strong id="gesture-hand">None</strong>
+                        </div>
+                        <div>
+                            <span class="panel-label">Announcements</span>
+                            <strong id="gesture-voice-state">On</strong>
+                        </div>
+                    </article>
+
+                    <div class="gesture-actions">
+                        <button id="gesture-start" class="action-btn" type="button">Start Camera</button>
+                        <button id="gesture-stop" class="action-btn action-alt" type="button">Stop</button>
+                        <button id="gesture-voice" class="action-btn action-quiet" type="button">Toggle Voice</button>
+                    </div>
+
+                    <article class="metric-panel">
+                        <span class="panel-label">What was ported</span>
+                        <ul class="note-list compact">
+                            <li>Mirrored frame behavior from the OpenCV version.</li>
+                            <li>Thumb rules that depend on left vs right hand label.</li>
+                            <li>Debounced spoken counts to avoid spam.</li>
+                        </ul>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="flight-lab" class="lab lab-flight">
+            <div class="lab-intro">
+                <p class="lab-kicker">Repo 03</p>
+                <h2>Flight Delay Simulator</h2>
+                <p>
+                    This demo uses a precomputed slice of predictions generated from the original XGBoost model,
+                    scaler, and <code>predictor.py</code> flow in your flight repo. It behaves like a fast browser control panel
+                    rather than a static case-study summary.
+                </p>
+                <div class="repo-links">
+                    <a href="https://github.com/VinChan2001/Flight-Delay-Prediction-Pipeline" target="_blank" rel="noreferrer">Open repo</a>
+                    <span class="repo-file">predictor.py</span>
+                    <span class="repo-file">flight_delay_xgboost_model.json</span>
+                    <span class="repo-file">flight_delay_xgboost_scaler.pkl</span>
+                </div>
+            </div>
+
+            <div class="lab-surface flight-surface">
+                <form class="flight-controls" id="flight-controls">
+                    <label>
+                        Route
+                        <select id="flight-route"></select>
+                    </label>
+                    <label>
+                        Airline
+                        <select id="flight-airline"></select>
+                    </label>
+                    <label>
+                        Departure Band
+                        <select id="flight-time"></select>
+                    </label>
+                    <label>
+                        Season
+                        <select id="flight-season"></select>
+                    </label>
+                    <label>
+                        Trip Context
+                        <select id="flight-holiday">
+                            <option value="0">Normal Travel</option>
+                            <option value="1">Peak Holiday Travel</option>
+                        </select>
+                    </label>
+                    <label>
+                        Origin Weather
+                        <select id="flight-origin-weather"></select>
+                    </label>
+                    <label>
+                        Destination Weather
+                        <select id="flight-dest-weather"></select>
+                    </label>
+                </form>
+
+                <div class="flight-output">
+                    <article class="metric-panel flight-summary">
+                        <span class="panel-label">Model Verdict</span>
+                        <div id="flight-verdict" class="big-readout">Loading…</div>
+                        <div class="probability-row">
+                            <div>
+                                <span class="panel-label">Delay Probability</span>
+                                <strong id="flight-probability">--</strong>
+                            </div>
+                            <div>
+                                <span class="panel-label">Confidence</span>
+                                <strong id="flight-confidence">--</strong>
+                            </div>
+                        </div>
+                        <div class="confidence-bar flight-bar">
+                            <span id="flight-probability-fill"></span>
+                        </div>
+                    </article>
+
+                    <article class="metric-panel">
+                        <span class="panel-label">Scenario Snapshot</span>
+                        <div id="flight-meta" class="meta-list"></div>
+                    </article>
+
+                    <article class="metric-panel">
+                        <span class="panel-label">Risk Factors</span>
+                        <ul id="flight-factors" class="note-list compact"></ul>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="airbnb-lab" class="lab lab-airbnb">
+            <div class="lab-intro">
+                <p class="lab-kicker">Repo 04</p>
+                <h2>Airbnb Booking Triage</h2>
+                <p>
+                    This interaction is driven by the actual <code>high_booking_rate_group15.csv</code> submission output from your
+                    Airbnb repo. Since the repo exposes the scored listing probabilities rather than the raw test rows, the browser
+                    version lets people tune the shortlist threshold and inspect how aggressive the model would be in practice.
+                </p>
+                <div class="repo-links">
+                    <a href="https://github.com/VinChan2001/Predicting-High-Booking-Rate-Airbnb-Listings" target="_blank" rel="noreferrer">Open repo</a>
+                    <span class="repo-file">submission_final.ipynb</span>
+                    <span class="repo-file">high_booking_rate_group15.csv</span>
+                    <span class="repo-file">annotated report</span>
+                </div>
+            </div>
+
+            <div class="lab-surface airbnb-surface">
+                <div class="airbnb-controls">
+                    <article class="metric-panel">
+                        <span class="panel-label">Shortlist Threshold</span>
+                        <div class="slider-header">
+                            <strong id="airbnb-threshold-value">50%</strong>
+                            <span id="airbnb-threshold-note" class="subtle-text">Probability cutoff for flagging a listing.</span>
+                        </div>
+                        <input id="airbnb-threshold" class="range-input" type="range" min="5" max="95" step="1" value="50">
+                        <div class="range-labels">
+                            <span>Wide net</span>
+                            <span>Balanced</span>
+                            <span>Elite only</span>
+                        </div>
+                        <div class="preset-row">
+                            <button class="action-btn action-alt airbnb-preset" type="button" data-threshold="15">15%</button>
+                            <button class="action-btn action-alt airbnb-preset" type="button" data-threshold="50">50%</button>
+                            <button class="action-btn action-alt airbnb-preset" type="button" data-threshold="80">80%</button>
+                        </div>
+                    </article>
+
+                    <article class="metric-panel">
+                        <span class="panel-label">Repo Outcomes</span>
+                        <div id="airbnb-metrics" class="top-list"></div>
+                    </article>
+
+                    <article class="metric-panel">
+                        <span class="panel-label">What the model emphasized</span>
+                        <ul id="airbnb-drivers" class="note-list compact"></ul>
+                    </article>
+                </div>
+
+                <div class="airbnb-output">
+                    <article class="metric-panel airbnb-summary">
+                        <span class="panel-label">Current Shortlist</span>
+                        <div id="airbnb-selected-count" class="big-readout">--</div>
+                        <div class="probability-row">
+                            <div>
+                                <span class="panel-label">Selection Rate</span>
+                                <strong id="airbnb-selected-share">--</strong>
+                            </div>
+                            <div>
+                                <span class="panel-label">Average Selected Score</span>
+                                <strong id="airbnb-average-score">--</strong>
+                            </div>
+                        </div>
+                        <div class="confidence-bar airbnb-bar">
+                            <span id="airbnb-selected-fill"></span>
+                        </div>
+                        <p id="airbnb-cutoff-copy" class="subtle-text">--</p>
+                    </article>
+
+                    <article class="metric-panel">
+                        <span class="panel-label">Score Distribution</span>
+                        <div id="airbnb-histogram" class="histogram"></div>
+                        <div class="range-labels">
+                            <span>0.00</span>
+                            <span>0.50</span>
+                            <span>1.00</span>
+                        </div>
+                    </article>
+
+                    <article class="metric-panel">
+                        <span class="panel-label">Selected Buckets</span>
+                        <div id="airbnb-bands" class="top-list"></div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="crash-lab" class="lab lab-crash">
+            <div class="lab-intro">
+                <p class="lab-kicker">Repo 05</p>
+                <h2>Crash Clearance Explorer</h2>
+                <p>
+                    This uses the repo's <code>crash_info.csv</code> and <code>segment_info.csv</code> joined into the same
+                    <code>crash_duration_minutes</code> target used in the notebook. Instead of faking a web model artifact that
+                    was never published, the page lets people play with the real historical cohorts the pipeline was trained on.
+                </p>
+                <div class="repo-links">
+                    <a href="https://github.com/VinChan2001/Crash-Duration-Prediction" target="_blank" rel="noreferrer">Open repo</a>
+                    <span class="repo-file">Venkata_Chanamallu_01042025.ipynb</span>
+                    <span class="repo-file">crash_info.csv</span>
+                    <span class="repo-file">segment_info.csv</span>
+                </div>
+            </div>
+
+            <div class="lab-surface crash-surface">
+                <form class="crash-controls" id="crash-controls">
+                    <label>
+                        Incident Type
+                        <select id="crash-subtype"></select>
+                    </label>
+                    <label>
+                        Road Class
+                        <select id="crash-road-class"></select>
+                    </label>
+                    <label>
+                        Weather
+                        <select id="crash-weather"></select>
+                    </label>
+                    <label>
+                        Closed Lanes
+                        <select id="crash-lanes"></select>
+                    </label>
+                    <label>
+                        Vehicles Involved
+                        <select id="crash-vehicles"></select>
+                    </label>
+                    <label>
+                        Time Window
+                        <select id="crash-time"></select>
+                    </label>
+                </form>
+
+                <div class="crash-output">
+                    <article class="metric-panel crash-summary">
+                        <span class="panel-label">Historical Clearance Window</span>
+                        <div id="crash-median" class="big-readout">--</div>
+                        <div class="probability-row">
+                            <div>
+                                <span class="panel-label">P90 Tail</span>
+                                <strong id="crash-p90">--</strong>
+                            </div>
+                            <div>
+                                <span class="panel-label">Matching Incidents</span>
+                                <strong id="crash-count">--</strong>
+                            </div>
+                        </div>
+                        <div class="confidence-bar crash-bar">
+                            <span id="crash-relative-fill"></span>
+                        </div>
+                        <p id="crash-relative-copy" class="subtle-text">--</p>
+                    </article>
+
+                    <article class="metric-panel">
+                        <span class="panel-label">Cohort Snapshot</span>
+                        <div id="crash-meta" class="meta-list"></div>
+                    </article>
+
+                    <article class="metric-panel">
+                        <span class="panel-label">Time-of-Day Breakdown</span>
+                        <div id="crash-time-breakdown" class="top-list"></div>
+                    </article>
+
+                    <article class="metric-panel">
+                        <span class="panel-label">Notebook Progress</span>
+                        <div id="crash-model-metrics" class="top-list"></div>
+                    </article>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer shell">
+        <p>Built from actual GitHub repos so the work can be tested, not just described.</p>
+        <a href="https://github.com/VinChan2001" target="_blank" rel="noreferrer">github.com/VinChan2001</a>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script src="script.js"></script>
+</body>
+</html>
