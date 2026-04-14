@@ -1,6 +1,40 @@
 const DIGIT_CANVAS_SIZE = 320;
 const DIGIT_GRID_SIZE = 8;
 const DIGIT_K = 5;
+const DIGIT_PATH_SAMPLE_COUNT = 32;
+const DIGIT_PATH_TEMPLATES = {
+    0: [
+        [[0.5, 0.1], [0.32, 0.18], [0.22, 0.38], [0.24, 0.64], [0.38, 0.86], [0.58, 0.88], [0.72, 0.68], [0.74, 0.4], [0.64, 0.18], [0.5, 0.1]]
+    ],
+    1: [
+        [[0.42, 0.24], [0.5, 0.12], [0.5, 0.88]]
+    ],
+    2: [
+        [[0.28, 0.24], [0.42, 0.12], [0.64, 0.16], [0.72, 0.32], [0.26, 0.84], [0.72, 0.84]]
+    ],
+    3: [
+        [[0.32, 0.18], [0.45, 0.12], [0.62, 0.14], [0.71, 0.27], [0.56, 0.41], [0.47, 0.45], [0.63, 0.52], [0.73, 0.67], [0.69, 0.84], [0.51, 0.9], [0.33, 0.81], [0.22, 0.68]]
+    ],
+    4: [
+        [[0.64, 0.88], [0.64, 0.12], [0.26, 0.55], [0.74, 0.55]],
+        [[0.58, 0.12], [0.26, 0.56], [0.76, 0.56], [0.58, 0.56], [0.58, 0.88]]
+    ],
+    5: [
+        [[0.72, 0.13], [0.42, 0.13], [0.39, 0.46], [0.58, 0.44], [0.71, 0.55], [0.71, 0.74], [0.57, 0.88], [0.35, 0.88], [0.2, 0.78]]
+    ],
+    6: [
+        [[0.67, 0.17], [0.52, 0.13], [0.35, 0.24], [0.26, 0.44], [0.31, 0.66], [0.45, 0.83], [0.63, 0.83], [0.71, 0.68], [0.61, 0.53], [0.43, 0.48], [0.29, 0.51]]
+    ],
+    7: [
+        [[0.24, 0.16], [0.76, 0.16], [0.44, 0.88]]
+    ],
+    8: [
+        [[0.48, 0.11], [0.35, 0.2], [0.35, 0.34], [0.49, 0.43], [0.64, 0.36], [0.64, 0.21], [0.49, 0.11], [0.38, 0.55], [0.38, 0.76], [0.5, 0.87], [0.64, 0.79], [0.64, 0.58], [0.5, 0.46], [0.38, 0.55]]
+    ],
+    9: [
+        [[0.35, 0.31], [0.45, 0.16], [0.62, 0.18], [0.7, 0.34], [0.61, 0.48], [0.42, 0.46], [0.33, 0.35], [0.62, 0.2], [0.62, 0.83]]
+    ]
+};
 const AIRBNB_HISTOGRAM_BINS = 20;
 const AIRBNB_SCORE_BANDS = [
     { label: '0.05-0.10', min: 0.05, max: 0.1 },
@@ -82,6 +116,9 @@ let flightData = null;
 let airbnbData = null;
 let crashData = null;
 let digitDrawing = false;
+let digitCurrentStroke = null;
+let digitStrokeGroups = [];
+let digitUsingSample = false;
 let airbnbHistogramBins = [];
 
 let gestureTracker = null;
@@ -155,6 +192,165 @@ function quantile(sortedValues, quantileValue) {
     return lowerValue + (upperValue - lowerValue) * (position - lowerIndex);
 }
 
+function pointDistance(left, right) {
+    return Math.hypot(left.x - right.x, left.y - right.y);
+}
+
+function pathLength(points) {
+    let total = 0;
+
+    for (let index = 1; index < points.length; index += 1) {
+        total += pointDistance(points[index - 1], points[index]);
+    }
+
+    return total;
+}
+
+function resamplePath(points, sampleCount = DIGIT_PATH_SAMPLE_COUNT) {
+    if (!points.length) {
+        return [];
+    }
+
+    const interval = pathLength(points) / Math.max(sampleCount - 1, 1);
+    if (!interval) {
+        return Array.from({ length: sampleCount }, () => ({ ...points[0] }));
+    }
+
+    const resampled = [{ ...points[0] }];
+    let previous = { ...points[0] };
+    let accumulated = 0;
+
+    for (let index = 1; index < points.length; index += 1) {
+        const current = points[index];
+        let segmentLength = pointDistance(previous, current);
+
+        if (!segmentLength) {
+            continue;
+        }
+
+        while (accumulated + segmentLength >= interval) {
+            const ratio = (interval - accumulated) / segmentLength;
+            const interpolated = {
+                x: previous.x + ratio * (current.x - previous.x),
+                y: previous.y + ratio * (current.y - previous.y)
+            };
+
+            resampled.push(interpolated);
+            previous = interpolated;
+            segmentLength = pointDistance(previous, current);
+            accumulated = 0;
+        }
+
+        accumulated += segmentLength;
+        previous = current;
+    }
+
+    while (resampled.length < sampleCount) {
+        resampled.push({ ...points[points.length - 1] });
+    }
+
+    return resampled.slice(0, sampleCount);
+}
+
+function normalizeDigitPath(points) {
+    const resampled = resamplePath(points);
+    const xs = resampled.map((point) => point.x);
+    const ys = resampled.map((point) => point.y);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    const size = Math.max(maxX - minX, maxY - minY, 1);
+
+    const scaled = resampled.map((point) => ({
+        x: (point.x - minX) / size,
+        y: (point.y - minY) / size
+    }));
+
+    const center = scaled.reduce(
+        (accumulator, point) => ({
+            x: accumulator.x + point.x / scaled.length,
+            y: accumulator.y + point.y / scaled.length
+        }),
+        { x: 0, y: 0 }
+    );
+
+    return scaled.map((point) => ({
+        x: point.x - center.x,
+        y: point.y - center.y
+    }));
+}
+
+function normalizedTemplatePath(path) {
+    return normalizeDigitPath(path.map(([x, y]) => ({ x, y })));
+}
+
+function pathDistanceScore(left, right) {
+    let total = 0;
+
+    for (let index = 0; index < left.length; index += 1) {
+        total += pointDistance(left[index], right[index]);
+    }
+
+    return total / Math.max(left.length, 1);
+}
+
+function dominantDigitStrokePath() {
+    if (!digitStrokeGroups.length) {
+        return null;
+    }
+
+    const ranked = digitStrokeGroups
+        .filter((stroke) => stroke.length >= 2)
+        .map((stroke) => ({
+            stroke,
+            length: pathLength(stroke)
+        }))
+        .sort((left, right) => right.length - left.length);
+
+    return ranked[0]?.stroke || null;
+}
+
+function recognizeDigitPath() {
+    const stroke = dominantDigitStrokePath();
+    if (!stroke || stroke.length < 4) {
+        return null;
+    }
+
+    const normalizedStroke = normalizeDigitPath(stroke);
+    const templateDistances = [];
+
+    Object.entries(DIGIT_PATH_TEMPLATES).forEach(([label, variants]) => {
+        let bestDistance = Number.POSITIVE_INFINITY;
+
+        variants.forEach((variant) => {
+            const distance = pathDistanceScore(normalizedStroke, normalizedTemplatePath(variant));
+            bestDistance = Math.min(bestDistance, distance);
+        });
+
+        templateDistances.push({ label: Number(label), distance: bestDistance });
+    });
+
+    templateDistances.sort((left, right) => left.distance - right.distance);
+    const weighted = templateDistances.map((entry) => ({
+        label: entry.label,
+        weight: 1 / Math.max(entry.distance * entry.distance, 1e-6)
+    }));
+    const totalWeight = weighted.reduce((sum, entry) => sum + entry.weight, 0) || 1;
+    const probabilities = weighted
+        .map((entry) => ({
+            label: entry.label,
+            probability: entry.weight / totalWeight
+        }))
+        .sort((left, right) => right.probability - left.probability);
+
+    return {
+        prediction: probabilities[0]?.label ?? null,
+        confidence: probabilities[0]?.probability ?? 0,
+        probabilities
+    };
+}
+
 function drawDigitBoardBackground() {
     digitCtx.fillStyle = '#ffffff';
     digitCtx.fillRect(0, 0, DIGIT_CANVAS_SIZE, DIGIT_CANVAS_SIZE);
@@ -172,6 +368,23 @@ function resetDigitOutput() {
     digitNeighbors.innerHTML = '';
     setPixelGrid(processedCells, new Array(64).fill(0), '240, 106, 66');
     setDigitHintVisible(true);
+}
+
+function resetDigitStrokes() {
+    digitCurrentStroke = null;
+    digitStrokeGroups = [];
+    digitUsingSample = false;
+}
+
+function appendDigitStrokePoint(point) {
+    if (!digitCurrentStroke) {
+        return;
+    }
+
+    const lastPoint = digitCurrentStroke[digitCurrentStroke.length - 1];
+    if (!lastPoint || pointDistance(lastPoint, point) >= 3) {
+        digitCurrentStroke.push(point);
+    }
 }
 
 function pointerPosition(event) {
@@ -483,7 +696,7 @@ function looksLikeOpenFour(vector) {
     return classicOpenFour || angledOpenFour;
 }
 
-function analyzeDigitVector(vector) {
+function analyzeDigitVector(vector, pathResult = null) {
     const softened = blurDigitVector(vector);
     const softenedTwice = blurDigitVector(softened);
     const compact = remapDigitVector(vector, 1.0);
@@ -510,6 +723,21 @@ function analyzeDigitVector(vector) {
             scores[4] += 0.9;
         } else {
             scores[4] += 0.35;
+        }
+    }
+
+    if (pathResult?.probabilities?.length) {
+        const pathConfidence = pathResult.probabilities[0]?.probability ?? 0;
+        const secondPathProbability = pathResult.probabilities[1]?.probability ?? 0;
+        const pathMargin = Math.max(0, pathConfidence - secondPathProbability);
+        const pathWeight = 1.4 + pathConfidence * 2.2;
+
+        pathResult.probabilities.forEach((entry) => {
+            scores[entry.label] += entry.probability * pathWeight;
+        });
+
+        if (pathMargin >= 0.08) {
+            scores[pathResult.prediction] += 0.9 + pathMargin * 3;
         }
     }
 
@@ -585,7 +813,7 @@ function updateDigitPrediction() {
     }
 
     setDigitHintVisible(false);
-    const result = analyzeDigitVector(vector);
+    const result = analyzeDigitVector(vector, recognizeDigitPath());
     setPixelGrid(processedCells, result.displayVector, '240, 106, 66');
 
     digitPrediction.textContent = String(result.prediction);
@@ -599,6 +827,8 @@ function drawSampleDigit() {
     const randomIndex = Math.floor(Math.random() * digitData.vectors.length);
     const vector = digitData.vectors[randomIndex];
     const cellSize = DIGIT_CANVAS_SIZE / DIGIT_GRID_SIZE;
+    resetDigitStrokes();
+    digitUsingSample = true;
 
     drawDigitBoardBackground();
     for (let row = 0; row < DIGIT_GRID_SIZE; row += 1) {
@@ -615,13 +845,22 @@ function drawSampleDigit() {
 
 function initDigitLab() {
     drawDigitBoardBackground();
+    resetDigitStrokes();
     resetDigitOutput();
 
     let lastPoint = null;
 
     digitCanvas.addEventListener('pointerdown', (event) => {
+        if (digitUsingSample) {
+            drawDigitBoardBackground();
+            resetDigitStrokes();
+            resetDigitOutput();
+        }
+
         digitDrawing = true;
         lastPoint = pointerPosition(event);
+        digitCurrentStroke = [lastPoint];
+        digitStrokeGroups.push(digitCurrentStroke);
         setDigitHintVisible(false);
         drawStroke(lastPoint, lastPoint);
         digitCanvas.setPointerCapture(event.pointerId);
@@ -634,6 +873,7 @@ function initDigitLab() {
 
         const nextPoint = pointerPosition(event);
         drawStroke(lastPoint, nextPoint);
+        appendDigitStrokePoint(nextPoint);
         lastPoint = nextPoint;
     });
 
@@ -643,6 +883,8 @@ function initDigitLab() {
         }
 
         digitDrawing = false;
+        appendDigitStrokePoint(lastPoint);
+        digitCurrentStroke = null;
         updateDigitPrediction();
     }
 
@@ -651,6 +893,7 @@ function initDigitLab() {
 
     digitClearButton.addEventListener('click', () => {
         drawDigitBoardBackground();
+        resetDigitStrokes();
         resetDigitOutput();
     });
 
