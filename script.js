@@ -196,6 +196,93 @@ function drawStroke(from, to) {
     digitCtx.stroke();
 }
 
+function normalizeDigitVector(vector, thresholdRatio = 0.08) {
+    const peak = Math.max(...vector);
+    if (!peak) {
+        return null;
+    }
+
+    const threshold = peak * thresholdRatio;
+    const normalized = vector.map((value) => {
+        if (value <= threshold) {
+            return 0;
+        }
+
+        return ((value - threshold) / Math.max(peak - threshold, 1e-6)) * 16;
+    });
+
+    const newPeak = Math.max(...normalized);
+    return newPeak ? normalized.map((value) => (value / newPeak) * 16) : null;
+}
+
+function recenterDigitVector(vector) {
+    let totalWeight = 0;
+    let weightedX = 0;
+    let weightedY = 0;
+
+    for (let y = 0; y < DIGIT_GRID_SIZE; y += 1) {
+        for (let x = 0; x < DIGIT_GRID_SIZE; x += 1) {
+            const value = vector[y * DIGIT_GRID_SIZE + x];
+            totalWeight += value;
+            weightedX += x * value;
+            weightedY += y * value;
+        }
+    }
+
+    if (!totalWeight) {
+        return vector;
+    }
+
+    const centerX = weightedX / totalWeight;
+    const centerY = weightedY / totalWeight;
+    const shiftX = Math.round((DIGIT_GRID_SIZE - 1) / 2 - centerX);
+    const shiftY = Math.round((DIGIT_GRID_SIZE - 1) / 2 - centerY);
+
+    if (!shiftX && !shiftY) {
+        return vector;
+    }
+
+    const shifted = new Array(64).fill(0);
+
+    for (let y = 0; y < DIGIT_GRID_SIZE; y += 1) {
+        for (let x = 0; x < DIGIT_GRID_SIZE; x += 1) {
+            const sourceX = x - shiftX;
+            const sourceY = y - shiftY;
+
+            if (sourceX < 0 || sourceX >= DIGIT_GRID_SIZE || sourceY < 0 || sourceY >= DIGIT_GRID_SIZE) {
+                continue;
+            }
+
+            shifted[y * DIGIT_GRID_SIZE + x] = vector[sourceY * DIGIT_GRID_SIZE + sourceX];
+        }
+    }
+
+    return shifted;
+}
+
+function rasterizeSquareDigit(squareCanvas, inset = 0.9, blur = 0.4) {
+    const targetCanvas = document.createElement('canvas');
+    targetCanvas.width = DIGIT_GRID_SIZE;
+    targetCanvas.height = DIGIT_GRID_SIZE;
+    const targetCtx = targetCanvas.getContext('2d');
+    const targetSide = DIGIT_GRID_SIZE - inset * 2;
+
+    targetCtx.imageSmoothingEnabled = true;
+    targetCtx.filter = `blur(${blur}px)`;
+    targetCtx.fillStyle = '#ffffff';
+    targetCtx.fillRect(0, 0, DIGIT_GRID_SIZE, DIGIT_GRID_SIZE);
+    targetCtx.drawImage(squareCanvas, inset, inset, targetSide, targetSide);
+
+    const scaledPixels = targetCtx.getImageData(0, 0, DIGIT_GRID_SIZE, DIGIT_GRID_SIZE).data;
+    const vector = new Array(DIGIT_GRID_SIZE * DIGIT_GRID_SIZE).fill(0);
+
+    for (let index = 0; index < vector.length; index += 1) {
+        vector[index] = 255 - scaledPixels[index * 4];
+    }
+
+    return normalizeDigitVector(recenterDigitVector(vector));
+}
+
 function preprocessDigit() {
     const sourceData = digitCtx.getImageData(0, 0, DIGIT_CANVAS_SIZE, DIGIT_CANVAS_SIZE);
     const pixels = sourceData.data;
@@ -222,7 +309,7 @@ function preprocessDigit() {
         return null;
     }
 
-    const padding = 16;
+    const padding = 22;
     const width = Math.max(1, maxX - minX + 1);
     const height = Math.max(1, maxY - minY + 1);
     const cropX = Math.max(0, minX - padding);
@@ -249,32 +336,7 @@ function preprocessDigit() {
         Math.floor((side - cropHeight) / 2)
     );
 
-    const targetCanvas = document.createElement('canvas');
-    targetCanvas.width = DIGIT_GRID_SIZE;
-    targetCanvas.height = DIGIT_GRID_SIZE;
-    const targetCtx = targetCanvas.getContext('2d');
-    targetCtx.imageSmoothingEnabled = true;
-    targetCtx.filter = 'blur(0.6px)';
-    targetCtx.fillStyle = '#ffffff';
-    targetCtx.fillRect(0, 0, DIGIT_GRID_SIZE, DIGIT_GRID_SIZE);
-    targetCtx.drawImage(squareCanvas, 0, 0, DIGIT_GRID_SIZE, DIGIT_GRID_SIZE);
-
-    const scaledPixels = targetCtx.getImageData(0, 0, DIGIT_GRID_SIZE, DIGIT_GRID_SIZE).data;
-    const vector = new Array(DIGIT_GRID_SIZE * DIGIT_GRID_SIZE).fill(0);
-    let maxValue = 0;
-
-    for (let index = 0; index < vector.length; index += 1) {
-        const pixelValue = scaledPixels[index * 4];
-        const inverted = 255 - pixelValue;
-        vector[index] = inverted;
-        maxValue = Math.max(maxValue, inverted);
-    }
-
-    if (maxValue === 0) {
-        return null;
-    }
-
-    return vector.map((value) => (value / maxValue) * 16);
+    return rasterizeSquareDigit(squareCanvas, 0.9, 0.4);
 }
 
 function blurDigitVector(vector) {
@@ -311,6 +373,27 @@ function blurDigitVector(vector) {
 
     const peak = Math.max(...blurred);
     return peak ? blurred.map((value) => (value / peak) * 16) : blurred;
+}
+
+function remapDigitVector(vector, inset = 0.7) {
+    const sourceCanvas = document.createElement('canvas');
+    sourceCanvas.width = DIGIT_GRID_SIZE;
+    sourceCanvas.height = DIGIT_GRID_SIZE;
+    const sourceCtx = sourceCanvas.getContext('2d');
+    const imageData = sourceCtx.createImageData(DIGIT_GRID_SIZE, DIGIT_GRID_SIZE);
+
+    for (let index = 0; index < vector.length; index += 1) {
+        const value = 255 - Math.round((vector[index] / 16) * 255);
+        const offset = index * 4;
+        imageData.data[offset] = value;
+        imageData.data[offset + 1] = value;
+        imageData.data[offset + 2] = value;
+        imageData.data[offset + 3] = 255;
+    }
+
+    sourceCtx.putImageData(imageData, 0, 0);
+
+    return rasterizeSquareDigit(sourceCanvas, inset, 0.2) || vector;
 }
 
 function classifyDigitVector(vector) {
@@ -403,10 +486,14 @@ function looksLikeOpenFour(vector) {
 function analyzeDigitVector(vector) {
     const softened = blurDigitVector(vector);
     const softenedTwice = blurDigitVector(softened);
+    const compact = remapDigitVector(vector, 1.0);
+    const compactSoft = blurDigitVector(compact);
     const variants = [
-        { weight: 0.58, vector, result: classifyDigitVector(vector) },
-        { weight: 0.24, vector: softened, result: classifyDigitVector(softened) },
-        { weight: 0.18, vector: softenedTwice, result: classifyDigitVector(softenedTwice) }
+        { weight: 0.34, vector, result: classifyDigitVector(vector) },
+        { weight: 0.18, vector: softened, result: classifyDigitVector(softened) },
+        { weight: 0.1, vector: softenedTwice, result: classifyDigitVector(softenedTwice) },
+        { weight: 0.23, vector: compact, result: classifyDigitVector(compact) },
+        { weight: 0.15, vector: compactSoft, result: classifyDigitVector(compactSoft) }
     ];
 
     const scores = new Array(10).fill(0);

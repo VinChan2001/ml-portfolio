@@ -764,8 +764,17 @@ select {
         width: min(var(--shell), calc(100% - 1rem));
     }
 
-    .topbar-inner,
-    .topbar-links,
+    .topbar-inner {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .topbar-links {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
     .footer {
         flex-direction: column;
         align-items: flex-start;
