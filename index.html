@@ -20,6 +20,7 @@
                 <a href="#flight-lab">Flight</a>
                 <a href="#airbnb-lab">Airbnb</a>
                 <a href="#crash-lab">Crash</a>
+                <a href="#walmart-lab">Walmart</a>
             </div>
         </div>
     </nav>
@@ -31,7 +32,8 @@
             <p class="hero-text">
                 These demos are rebuilt from real GitHub projects and repo outputs so someone skimming a resume can
                 test the work directly: draw digits, count fingers on camera, simulate flight delay risk, tune an
-                Airbnb shortlist threshold, and slice real crash-clearance cohorts from the notebook data.
+                Airbnb shortlist threshold, slice real crash-clearance cohorts, and inspect the Walmart forecasting
+                pipeline built from the project artifacts.
             </p>
             <div class="hero-chips">
                 <span>doodle-digit-app</span>
@@ -39,15 +41,17 @@
                 <span>Flight-Delay-Prediction-Pipeline</span>
                 <span>Predicting-High-Booking-Rate-Airbnb-Listings</span>
                 <span>Crash-Duration-Prediction</span>
+                <span>Walmart Department Forecasting</span>
             </div>
         </div>
 
         <aside class="hero-note">
             <p class="hero-note-label">Ground Rules</p>
             <ul class="note-list">
-                <li>Everything here maps back to existing public repos.</li>
+                <li>Everything here maps back to existing repos or project folders.</li>
                 <li>No generic portfolio cards or made-up case studies.</li>
                 <li>Each interaction is tied to real code files or model artifacts.</li>
+                <li>The Walmart section is sourced from the local <code>wmt_proj</code> work folder.</li>
             </ul>
         </aside>
     </header>
@@ -427,10 +431,101 @@
                 </div>
             </div>
         </section>
+
+        <section id="walmart-lab" class="lab lab-walmart">
+            <div class="lab-intro">
+                <p class="lab-kicker">Repo 06</p>
+                <h2>Walmart Forecasting Workbench</h2>
+                <p>
+                    This section is built from the <code>wmt_proj</code> folder: merged cases, truck arrivals, store metadata,
+                    external signals, leakage-safe time-series splits, department modeling suites, feature importances,
+                    and the final holdout submissions.
+                </p>
+                <div class="repo-links">
+                    <span class="repo-file">01_data_merge.ipynb</span>
+                    <span class="repo-file">02_data_preparation_pipeline.ipynb</span>
+                    <span class="repo-file">04_dept*_modeling_suite.ipynb</span>
+                    <span class="repo-file">models/top10_feature_importances.csv</span>
+                </div>
+            </div>
+
+            <div class="lab-surface walmart-surface">
+                <div class="walmart-controls">
+                    <article class="metric-panel">
+                        <span class="panel-label">Forecast Lens</span>
+                        <form class="walmart-select-grid" id="walmart-controls">
+                            <label>
+                                Department
+                                <select id="walmart-dept"></select>
+                            </label>
+                            <label>
+                                Target
+                                <select id="walmart-target">
+                                    <option value="cases">Inbound cases</option>
+                                    <option value="trucks">Truck arrivals</option>
+                                </select>
+                            </label>
+                        </form>
+                    </article>
+
+                    <article class="metric-panel">
+                        <span class="panel-label">Project Scope</span>
+                        <div id="walmart-pipeline" class="top-list"></div>
+                    </article>
+
+                    <article class="metric-panel">
+                        <span class="panel-label">What we worked on</span>
+                        <ul id="walmart-workstreams" class="note-list compact"></ul>
+                    </article>
+                </div>
+
+                <div class="walmart-output">
+                    <article class="metric-panel walmart-summary">
+                        <span class="panel-label">Best Test Model</span>
+                        <div id="walmart-best-model" class="big-readout">Loading…</div>
+                        <div class="probability-row">
+                            <div>
+                                <span class="panel-label">MAPE</span>
+                                <strong id="walmart-mape">--</strong>
+                            </div>
+                            <div>
+                                <span class="panel-label">MAE</span>
+                                <strong id="walmart-mae">--</strong>
+                            </div>
+                        </div>
+                        <div class="confidence-bar walmart-bar">
+                            <span id="walmart-mape-fill"></span>
+                        </div>
+                        <p id="walmart-model-copy" class="subtle-text">--</p>
+                    </article>
+
+                    <article class="metric-panel">
+                        <span class="panel-label">Model Comparison</span>
+                        <div id="walmart-model-bars" class="bar-list"></div>
+                    </article>
+
+                    <article class="metric-panel">
+                        <span class="panel-label">Top Feature Drivers</span>
+                        <div id="walmart-feature-bars" class="bar-list"></div>
+                    </article>
+
+                    <article class="metric-panel walmart-viz-panel">
+                        <div class="walmart-viz-header">
+                            <span class="panel-label">Project Artifact</span>
+                            <select id="walmart-visual"></select>
+                        </div>
+                        <figure>
+                            <img id="walmart-visual-image" src="" alt="Walmart forecasting project visualization">
+                            <figcaption id="walmart-visual-caption" class="subtle-text">--</figcaption>
+                        </figure>
+                    </article>
+                </div>
+            </div>
+        </section>
     </main>
 
     <footer class="footer shell">
-        <p>Built from actual GitHub repos so the work can be tested, not just described.</p>
+        <p>Built from actual repos and project artifacts so the work can be tested, not just described.</p>
         <a href="https://github.com/VinChan2001" target="_blank" rel="noreferrer">github.com/VinChan2001</a>
     </footer>
 

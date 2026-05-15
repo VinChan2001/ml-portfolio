@@ -11,6 +11,8 @@
     --flight: #3158d8;
     --airbnb: #c54d66;
     --crash: #9a7a34;
+    --walmart: #0071ce;
+    --walmart-warm: #ffc220;
     --accent-soft: #f4cdb9;
     --shadow: 0 22px 60px rgba(62, 43, 21, 0.12);
     --shadow-soft: 0 12px 28px rgba(62, 43, 21, 0.08);
@@ -33,6 +35,7 @@ html {
 
 body {
     min-height: 100vh;
+    overflow-x: hidden;
     color: var(--ink);
     font-family: 'Space Grotesk', sans-serif;
     background:
@@ -65,6 +68,7 @@ code {
     background: rgba(24, 34, 31, 0.06);
     font-family: 'IBM Plex Mono', monospace;
     font-size: 0.92em;
+    overflow-wrap: anywhere;
 }
 
 button,
@@ -74,7 +78,8 @@ select {
 }
 
 .shell {
-    width: min(var(--shell), calc(100% - 2rem));
+    width: min(var(--shell), calc(100vw - 2rem));
+    max-width: 100%;
     margin: 0 auto;
 }
 
@@ -129,6 +134,7 @@ select {
 .lab-surface,
 .metric-panel,
 .footer {
+    min-width: 0;
     border: 1px solid rgba(255, 255, 255, 0.68);
     background: var(--paper);
     backdrop-filter: blur(12px);
@@ -177,6 +183,7 @@ select {
     color: var(--muted);
     font-size: 1.05rem;
     line-height: 1.75;
+    overflow-wrap: anywhere;
 }
 
 .hero-chips,
@@ -192,11 +199,17 @@ select {
 
 .hero-chips span,
 .repo-file {
+    min-width: 0;
+    max-width: 100%;
     padding: 0.5rem 0.7rem;
     border-radius: var(--radius-sm);
     border: 1px solid var(--line);
     background: rgba(255, 255, 255, 0.66);
     font-size: 0.8rem;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
 }
 
 .hero-note {
@@ -232,6 +245,7 @@ select {
     grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.2fr);
     gap: 1rem;
     align-items: start;
+    min-width: 0;
 }
 
 .lab-intro {
@@ -251,15 +265,19 @@ select {
     margin-bottom: 1rem;
     color: var(--muted);
     line-height: 1.75;
+    overflow-wrap: anywhere;
 }
 
 .repo-links a {
+    min-width: 0;
+    max-width: 100%;
     padding: 0.62rem 0.86rem;
     border-radius: var(--radius-sm);
     background: var(--ink);
     color: #fff;
     font-size: 0.88rem;
     font-weight: 700;
+    overflow-wrap: anywhere;
 }
 
 .repo-links a:hover {
@@ -292,11 +310,16 @@ select {
     border-top: 4px solid var(--crash);
 }
 
+.lab-walmart .lab-surface {
+    border-top: 4px solid var(--walmart);
+}
+
 .digit-workspace,
 .flight-surface,
 .gesture-surface,
 .airbnb-surface,
-.crash-surface {
+.crash-surface,
+.walmart-surface {
     display: grid;
     gap: 1rem;
 }
@@ -462,12 +485,22 @@ select {
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
+    min-width: 0;
+}
+
+.top-list-row span,
+.meta-row span,
+.bar-row-top span {
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .top-list-row strong,
 .meta-row strong,
 .gesture-stats strong {
     font-size: 1rem;
+    overflow-wrap: anywhere;
+    text-align: right;
 }
 
 .neighbor-panel {
@@ -542,7 +575,8 @@ select {
 }
 
 .airbnb-surface,
-.crash-surface {
+.crash-surface,
+.walmart-surface {
     grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.2fr);
 }
 
@@ -553,7 +587,8 @@ select {
 }
 
 .flight-controls label,
-.crash-controls label {
+.crash-controls label,
+.walmart-select-grid label {
     display: grid;
     gap: 0.45rem;
     color: var(--muted);
@@ -562,7 +597,12 @@ select {
 }
 
 .flight-controls select,
-.crash-controls select {
+.crash-controls select,
+.walmart-select-grid select,
+.walmart-viz-header select {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
     min-height: 3.05rem;
     padding: 0.75rem 0.9rem;
     border: 1px solid var(--line);
@@ -574,7 +614,9 @@ select {
 .flight-output,
 .airbnb-controls,
 .airbnb-output,
-.crash-output {
+.crash-output,
+.walmart-controls,
+.walmart-output {
     display: grid;
     gap: 1rem;
 }
@@ -590,7 +632,8 @@ select {
 }
 
 .airbnb-summary .big-readout,
-.crash-summary .big-readout {
+.crash-summary .big-readout,
+.walmart-summary .big-readout {
     font-size: clamp(2.2rem, 4vw, 3.2rem);
 }
 
@@ -610,6 +653,97 @@ select {
 
 .crash-bar span {
     background: linear-gradient(90deg, var(--crash), #d4b26e);
+}
+
+.walmart-bar span {
+    background: linear-gradient(90deg, var(--walmart), var(--walmart-warm));
+}
+
+.walmart-select-grid {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.walmart-controls .top-list-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.walmart-controls .top-list-row strong {
+    text-align: left;
+}
+
+.bar-list {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.bar-row {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.bar-row-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.bar-row-top span {
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+.bar-row-track {
+    height: 10px;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    background: rgba(24, 34, 31, 0.08);
+}
+
+.bar-row-track span {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--walmart), #5aa8e8);
+}
+
+.bar-row.feature .bar-row-track span {
+    background: linear-gradient(90deg, var(--walmart-warm), #f08d3c);
+}
+
+.walmart-viz-panel {
+    gap: 1rem;
+}
+
+.walmart-viz-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.walmart-viz-header select {
+    min-width: min(100%, 240px);
+}
+
+.walmart-viz-panel figure {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.walmart-viz-panel img {
+    display: block;
+    width: 100%;
+    max-height: 460px;
+    object-fit: contain;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--line);
+    background: #fff;
 }
 
 .slider-header {
@@ -746,7 +880,8 @@ select {
     .gesture-surface,
     .flight-surface,
     .airbnb-surface,
-    .crash-surface {
+    .crash-surface,
+    .walmart-surface {
         grid-template-columns: 1fr;
     }
 
@@ -761,7 +896,7 @@ select {
 
 @media (max-width: 760px) {
     .shell {
-        width: min(var(--shell), calc(100% - 1rem));
+        width: min(var(--shell), calc(100vw - 1rem));
     }
 
     .topbar-inner {
@@ -815,6 +950,38 @@ select {
 }
 
 @media (max-width: 540px) {
+    .hero-copy,
+    .hero-note,
+    .lab-intro,
+    .lab-surface,
+    .metric-panel {
+        max-width: calc(100vw - 1rem);
+    }
+
+    .hero-text,
+    .lab-intro p,
+    .note-list li,
+    .subtle-text {
+        max-width: calc(100vw - 3rem);
+    }
+
+    .hero-chips span,
+    .repo-file {
+        flex: 1 1 100%;
+    }
+
+    .top-list-row,
+    .meta-row {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .top-list-row strong,
+    .meta-row strong {
+        text-align: left;
+    }
+
     .neighbor-grid {
         grid-template-columns: 1fr;
     }

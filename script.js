@@ -110,11 +110,27 @@ const crashMeta = document.getElementById('crash-meta');
 const crashTimeBreakdown = document.getElementById('crash-time-breakdown');
 const crashModelMetrics = document.getElementById('crash-model-metrics');
 
+const walmartDept = document.getElementById('walmart-dept');
+const walmartTarget = document.getElementById('walmart-target');
+const walmartPipeline = document.getElementById('walmart-pipeline');
+const walmartWorkstreams = document.getElementById('walmart-workstreams');
+const walmartBestModel = document.getElementById('walmart-best-model');
+const walmartMape = document.getElementById('walmart-mape');
+const walmartMae = document.getElementById('walmart-mae');
+const walmartMapeFill = document.getElementById('walmart-mape-fill');
+const walmartModelCopy = document.getElementById('walmart-model-copy');
+const walmartModelBars = document.getElementById('walmart-model-bars');
+const walmartFeatureBars = document.getElementById('walmart-feature-bars');
+const walmartVisual = document.getElementById('walmart-visual');
+const walmartVisualImage = document.getElementById('walmart-visual-image');
+const walmartVisualCaption = document.getElementById('walmart-visual-caption');
+
 const digitCtx = digitCanvas.getContext('2d');
 let digitData = null;
 let flightData = null;
 let airbnbData = null;
 let crashData = null;
+let walmartData = null;
 let digitDrawing = false;
 let digitCurrentStroke = null;
 let digitStrokeGroups = [];
@@ -1292,6 +1308,164 @@ function initCrashLab() {
     updateCrashLab();
 }
 
+function formatWalmartMetric(value, digits = 1) {
+    return `${(value * 100).toFixed(digits)}%`;
+}
+
+function formatWalmartFeatureName(feature) {
+    const labelMap = {
+        cases_lag_1: 'Cases lag 1',
+        cases_lag_7: 'Cases lag 7',
+        cases_lag_14: 'Cases lag 14',
+        cases_ma_7: 'Cases MA 7',
+        cases_ma_14: 'Cases MA 14',
+        cases_std_7: 'Cases volatility',
+        trucks_lag_1: 'Trucks lag 1',
+        trucks_lag_7: 'Trucks lag 7',
+        trucks_ma_7: 'Trucks MA 7',
+        temp_max_f: 'Max temperature',
+        temp_min_f: 'Min temperature',
+        Crude_Oil_Price: 'Crude oil price',
+        Initial_Jobless_Claims: 'Jobless claims',
+        state_unemployment_rate: 'State unemployment',
+        store_id: 'Store ID',
+        region_nbr: 'Region',
+        trucks: 'Truck arrivals'
+    };
+
+    return labelMap[feature] || feature.replaceAll('_', ' ');
+}
+
+function currentWalmartDepartment() {
+    return walmartData.departments.find((department) => department.id === walmartDept.value) || walmartData.departments[0];
+}
+
+function renderWalmartPipeline() {
+    walmartPipeline.innerHTML = '';
+
+    walmartData.pipeline.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'top-list-row';
+        row.innerHTML = `<span>${item.label}</span><strong>${item.value}</strong>`;
+        walmartPipeline.appendChild(row);
+    });
+}
+
+function renderWalmartWorkstreams() {
+    walmartWorkstreams.innerHTML = '';
+
+    walmartData.workstreams.forEach((workstream) => {
+        const item = document.createElement('li');
+        item.textContent = workstream;
+        walmartWorkstreams.appendChild(item);
+    });
+}
+
+function renderWalmartBar(container, label, value, width, extraClass = '') {
+    const row = document.createElement('div');
+    row.className = `bar-row ${extraClass}`.trim();
+    row.innerHTML = `
+        <div class="bar-row-top">
+            <span>${label}</span>
+            <strong>${value}</strong>
+        </div>
+        <div class="bar-row-track"><span style="width: ${Math.max(4, Math.min(100, width))}%"></span></div>
+    `;
+    container.appendChild(row);
+}
+
+function renderWalmartModelBars(metricSet) {
+    walmartModelBars.innerHTML = '';
+    const candidates = metricSet.testCandidates;
+    const bestMape = Math.max(Math.min(...candidates.map((candidate) => candidate.mape)), 0.001);
+
+    candidates.forEach((candidate) => {
+        const qualityWidth = (bestMape / candidate.mape) * 100;
+        renderWalmartBar(
+            walmartModelBars,
+            candidate.label,
+            formatWalmartMetric(candidate.mape),
+            qualityWidth
+        );
+    });
+}
+
+function renderWalmartFeatureBars(department, target) {
+    walmartFeatureBars.innerHTML = '';
+    const features = department.topFeatures[target] || [];
+
+    features.slice(0, 6).forEach((feature) => {
+        renderWalmartBar(
+            walmartFeatureBars,
+            formatWalmartFeatureName(feature.feature),
+            `${Math.round(feature.relative * 100)} rel.`,
+            feature.relative * 100,
+            'feature'
+        );
+    });
+
+    if (!walmartFeatureBars.children.length) {
+        walmartFeatureBars.innerHTML = '<p class="empty-state">No feature ranking available for this target.</p>';
+    }
+}
+
+function updateWalmartVisual() {
+    const visualization = walmartData.visualizations.find((item) => item.id === walmartVisual.value);
+
+    if (!visualization) {
+        return;
+    }
+
+    walmartVisualImage.src = visualization.src;
+    walmartVisualImage.alt = visualization.label;
+    walmartVisualCaption.textContent = visualization.caption;
+}
+
+function updateWalmartLab() {
+    const department = currentWalmartDepartment();
+    const target = walmartTarget.value;
+    const metricSet = department.metrics[target];
+    const bestModel = metricSet.bestModel;
+    const targetLabel = metricSet.targetLabel.toLowerCase();
+    const avgMape = target === 'cases'
+        ? walmartData.summary.avgCaseMape
+        : walmartData.summary.avgTruckMape;
+
+    walmartBestModel.textContent = bestModel.label;
+    walmartMape.textContent = formatWalmartMetric(bestModel.mape);
+    walmartMae.textContent = bestModel.mae.toLocaleString(undefined, {
+        maximumFractionDigits: target === 'cases' ? 2 : 3
+    });
+    walmartMapeFill.style.width = `${Math.max(6, Math.min(100, bestModel.mape * 1000))}%`;
+    walmartModelCopy.textContent = `${department.name} ${targetLabel} used ${bestModel.label} on the test window (${walmartData.summary.testWindow}). Portfolio-wide average ${target} MAPE is ${formatWalmartMetric(avgMape)}.`;
+
+    renderWalmartModelBars(metricSet);
+    renderWalmartFeatureBars(department, target);
+}
+
+function initWalmartLab() {
+    populateSelect(walmartDept, walmartData.departments, (department) => `${department.id} · ${department.name}`, (department) => department.id);
+    walmartDept.value = walmartData.departments[0]?.id || '';
+
+    walmartVisual.innerHTML = '';
+    walmartData.visualizations.forEach((visualization) => {
+        const option = document.createElement('option');
+        option.value = visualization.id;
+        option.textContent = visualization.label;
+        walmartVisual.appendChild(option);
+    });
+
+    renderWalmartPipeline();
+    renderWalmartWorkstreams();
+
+    walmartDept.addEventListener('change', updateWalmartLab);
+    walmartTarget.addEventListener('change', updateWalmartLab);
+    walmartVisual.addEventListener('change', updateWalmartVisual);
+
+    updateWalmartLab();
+    updateWalmartVisual();
+}
+
 function gestureSpeak(number) {
     if (!gestureVoiceEnabled || !('speechSynthesis' in window)) {
         return;
@@ -1496,11 +1670,12 @@ async function loadJSON(path) {
 
 async function boot() {
     try {
-        [digitData, flightData, airbnbData, crashData] = await Promise.all([
+        [digitData, flightData, airbnbData, crashData, walmartData] = await Promise.all([
             loadJSON('data/doodle_knn.json'),
             loadJSON('data/flight_scenarios.json'),
             loadJSON('data/airbnb_booking_scores.json'),
-            loadJSON('data/crash_clearance_rows.json')
+            loadJSON('data/crash_clearance_rows.json'),
+            loadJSON('data/walmart_forecasting_summary.json')
         ]);
 
         initDigitLab();
@@ -1508,12 +1683,14 @@ async function boot() {
         initFlightLab();
         initAirbnbLab();
         initCrashLab();
+        initWalmartLab();
     } catch (error) {
         digitPrediction.textContent = 'Load failed';
         digitConfidenceLabel.textContent = 'Data files could not be loaded.';
         flightVerdict.textContent = 'Load failed';
         airbnbSelectedCount.textContent = 'Load failed';
         crashMedian.textContent = 'Load failed';
+        walmartBestModel.textContent = 'Load failed';
         gestureStatus.textContent = 'Page boot failed';
         console.error(error);
     }
